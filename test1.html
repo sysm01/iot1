@@ -1,1 +1,81 @@
-<html>hello</html>
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Firebase MAC Address Search</title>
+</head>
+<body>
+    <h1>Search for MAC Addresses</h1>
+    <div>
+        <label for="deviceId">Device ID:</label>
+        <input type="text" id="deviceId" placeholder="Enter Device ID">
+        <button onclick="searchDevice()">Go!</button>
+    </div>
+    <h2>MAC Addresses for Device: <span id="deviceHeader"></span></h2>
+    <ul id="macList"></ul>
+
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <script>
+        // Firebase configuration (replace with your own)
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "trackermk1.firebaseapp.com",
+            databaseURL: "https://trackermk1-default-rtdb.firebaseio.com",
+            projectId: "trackermk1",
+            storageBucket: "trackermk1.appspot.com",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        // Initialize Firebase
+        const app = firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        function searchDevice() {
+            const deviceId = document.getElementById('deviceId').value;
+            const macList = document.getElementById('macList');
+            const deviceHeader = document.getElementById('deviceHeader');
+
+            // Clear previous results
+            macList.innerHTML = '';
+            deviceHeader.textContent = deviceId;
+
+            // Get a reference to the MAC addresses for the specified device
+            const macAddressesRef = db.ref('devices/' + deviceId + '/mac_addresses');
+
+            // Read the data at the mac_addresses location
+            macAddressesRef.get().then((snapshot) => {
+                const data = snapshot.val();
+
+                if (data) {
+                    // If data is an array
+                    if (Array.isArray(data)) {
+                        data.forEach(mac => {
+                            const li = document.createElement('li');
+                            li.textContent = mac;
+                            macList.appendChild(li);
+                        });
+                    }
+                    // If data is an object (key-value pairs)
+                    else if (typeof data === 'object') {
+                        for (const key in data) {
+                            if (data.hasOwnProperty(key)) {
+                                const mac = data[key];
+                                const li = document.createElement('li');
+                                li.textContent = `${key}: ${mac}`;
+                                macList.appendChild(li);
+                            }
+                        }
+                    }
+                } else {
+                    const li = document.createElement('li');
+                    li.textContent = 'No MAC addresses found for this device.';
+                    macList.appendChild(li);
+                }
+            }).catch((error) => {
+                console.error("Error fetching data:", error);
+            });
+        }
+    </script>
+</body>
+</html>
