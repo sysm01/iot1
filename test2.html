@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>BLE Scan Results</title>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+  <style>
+    body { font-family: Arial; padding: 20px; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
+    th { background-color: #f2f2f2; }
+    tr:hover { background-color: #f9f9f9; }
+  </style>
+</head>
+<body>
+
+<h2>BLE Device Scan Table</h2>
+<table id="resultsTable">
+  <thead>
+    <tr>
+      <th>Device ID</th>
+      <th>MAC Address</th>
+      <th>Position</th>
+      <th>Distance (m)</th>
+      <th>Last Scanned</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
+
+<script>
+  // 🔧 Firebase config
+  const firebaseConfig = {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "trackermk1.firebaseapp.com",
+    databaseURL: "https://trackermk1-default-rtdb.firebaseio.com",
+    projectId: "trackermk1",
+    storageBucket: "trackermk1.appspot.com",
+    messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+    appId: "YOUR_APP_ID"
+  };
+
+  const deviceId = "device123";
+
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+
+  async function loadData() {
+    const whitelistSnap = await db.ref(`devices/${deviceId}/mac_whitelist`).get();
+    const scanSnap = await db.ref(`devices/${deviceId}/mac_scan`).get();
+    const lastScannedSnap = await db.ref(`devices/${deviceId}/last_scanned`).get();
+
+    const whitelist = whitelistSnap.val() || [];
+    const scanList = scanSnap.val() || [];
+    const lastScanned = lastScannedSnap.exists() ? lastScannedSnap.val() : "N/A";
+
+    // Build lookup map for positions
+    const posMap = {};
+    whitelist.forEach(entry => {
+      posMap[entry.address.toLowerCase()] = entry.pos || "N/A";
+    });
+
+    // Build and sort table rows by distance
+    const tableBody = document.querySelector("#resultsTable tbody");
+    tableBody.innerHTML = "";
+
+    scanList.sort((a, b) => a.distance - b.distance);
+
+    scanList.forEach(entry => {
+      const mac = entry.address.toLowerCase();
+      const pos = posMap[mac] || "Unknown";
+      const row = document.createElement("tr");
+
+      row.innerHTML = `
+        <td>${deviceId}</td>
+        <td>${entry.address}</td>
+        <td>${pos}</td>
+        <td>${entry.distance.toFixed(2)}</td>
+        <td>${lastScanned}</td>
+      `;
+
+      tableBody.appendChild(row);
+    });
+  }
+
+  loadData();
+</script>
+
+</body>
+</html>
