@@ -1,18 +1,21 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>BLE Scan Results</title>
+  <title>BLE Tracker Viewer</title>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
   <style>
     body { font-family: Arial; padding: 20px; }
-    table { border-collapse: collapse; width: 100%; }
+    table { border-collapse: collapse; width: 100%; margin-top: 20px; }
     th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
     th { background-color: #f2f2f2; }
-    tr:hover { background-color: #f9f9f9; }
+    canvas { border: 1px solid #ccc; display: block; margin-bottom: 20px; }
   </style>
 </head>
 <body>
+
+<h2>Beacon Grid View</h2>
+<canvas id="beaconGrid" width="400" height="400"></canvas>
 
 <h2>BLE Device Scan Table</h2>
 <table id="resultsTable">
@@ -29,6 +32,7 @@
 </table>
 
 <script>
+  // 🔧 Firebase config
   const firebaseConfig = {
     apiKey: "YOUR_API_KEY",
     authDomain: "trackermk1.firebaseapp.com",
@@ -40,6 +44,13 @@
   };
 
   const deviceId = "device123";
+
+  // Canvas grid positions
+  const positionMap = {
+    A1: [50, 50],   A2: [200, 50],   A3: [350, 50],
+    B1: [50, 200],  B2: [200, 200],  B3: [350, 200],
+    C1: [50, 350],  C2: [200, 350],  C3: [350, 350]
+  };
 
   firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
@@ -63,6 +74,11 @@
 
     scanList.sort((a, b) => a.distance - b.distance);
 
+    // Draw top 2 on canvas
+    const topTwoPositions = scanList.slice(0, 2).map(d => posMap[d.address.toLowerCase()]);
+    drawGrid(topTwoPositions);
+
+    // Fill table
     scanList.forEach(entry => {
       const mac = entry.address.toLowerCase();
       const pos = posMap[mac] || "Unknown";
@@ -80,10 +96,54 @@
     });
   }
 
-  loadData(); // initial load
-  setInterval(loadData, 3000); // auto-refresh every 3 sec
-</script>
+  function drawGrid(topTwoPos = []) {
+    const canvas = document.getElementById("beaconGrid");
+    const ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+    // Grid lines
+    ctx.strokeStyle = "#000";
+    ctx.lineWidth = 2;
+    for (let i = 0; i < 3; i++) {
+      ctx.beginPath();
+      ctx.moveTo(50, 50 + i * 150);
+      ctx.lineTo(350, 50 + i * 150);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(50 + i * 150, 50);
+      ctx.lineTo(50 + i * 150, 350);
+      ctx.stroke();
+    }
+
+    // Draw all points
+    for (const [pos, [x, y]] of Object.entries(positionMap)) {
+      ctx.beginPath();
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = "red";
+      ctx.arc(x, y, 15, 0, 2 * Math.PI);
+      ctx.stroke();
+
+      // Highlight top 1 and 2
+      const idx = topTwoPos.indexOf(pos);
+      if (idx === 0 || idx === 1) {
+        for (let i = 1; i <= (idx === 0 ? 3 : 2); i++) {
+          ctx.beginPath();
+          ctx.arc(x, y, 15 + i * 5, 0, 2 * Math.PI);
+          ctx.stroke();
+        }
+      }
+
+      // Draw label
+      ctx.fillStyle = "black";
+      ctx.font = "14px Arial";
+      ctx.fillText(pos, x - 10, y - 20);
+    }
+  }
+
+  loadData();
+  setInterval(loadData, 3000); // Refresh every 3 seconds
+</script>
 
 </body>
 </html>
