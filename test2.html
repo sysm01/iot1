@@ -29,7 +29,6 @@
 </table>
 
 <script>
-  // 🔧 Firebase config
   const firebaseConfig = {
     apiKey: "YOUR_API_KEY",
     authDomain: "trackermk1.firebaseapp.com",
@@ -54,13 +53,11 @@
     const scanList = scanSnap.val() || [];
     const lastScanned = lastScannedSnap.exists() ? lastScannedSnap.val() : "N/A";
 
-    // Build lookup map for positions
     const posMap = {};
     whitelist.forEach(entry => {
       posMap[entry.address.toLowerCase()] = entry.pos || "N/A";
     });
 
-    // Build and sort table rows by distance
     const tableBody = document.querySelector("#resultsTable tbody");
     tableBody.innerHTML = "";
 
@@ -83,8 +80,10 @@
     });
   }
 
-  loadData();
+  loadData(); // initial load
+  setInterval(loadData, 3000); // auto-refresh every 3 sec
 </script>
+
 
 </body>
 </html>
