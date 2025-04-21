@@ -8,19 +8,26 @@
 </head>
 <body>
   <h2>Update MAC Whitelist</h2>
-  <form id="whitelistForm">
-    <!-- Device ID (readonly) -->
-    <label for="deviceId">Device ID:</label>
-    <input type="text" id="deviceId" value="device123" readonly><br><br>
 
-    <!-- Max Scan Distance -->
-    <label for="maxScanDistance">Max Scan Distance (meters):</label>
-    <input type="number" id="maxScanDistance" value="5" min="1" required><br><br>
+  <!-- Device ID (readonly) -->
+  <label for="deviceId">Device ID:</label>
+  <input type="text" id="deviceId" value="device123" readonly><br><br>
 
-    <div id="inputs"></div>
-    <br>
-    <button type="submit">Submit</button>
-  </form>
+  <!-- Max Scan Distance -->
+  <label for="maxScanDistance">Max Scan Distance (meters):</label>
+  <input type="number" id="maxScanDistance" value="5" min="1" required><br><br>
+
+  <!-- Last updated display -->
+  <label>Last Updated:</label>
+  <span id="lastUpdated">-</span><br><br>
+
+  <div id="inputs"></div>
+  <br>
+
+  <button type="button" id="readBtn">Read</button>
+  <button type="submit" form="whitelistForm">Update</button>
+
+  <form id="whitelistForm"></form>
 
   <script>
     // 🔧 Firebase configuration
@@ -67,12 +74,49 @@
       inputsContainer.appendChild(wrapper);
     }
 
-    // 🚀 Handle form submission
-    document.getElementById("whitelistForm").addEventListener("submit", function(event) {
+    // 📥 Handle Read button click
+    document.getElementById("readBtn").addEventListener("click", function () {
+      const deviceId = document.getElementById("deviceId").value;
+
+      firebase.database().ref(`devices/${deviceId}`).once("value")
+        .then(snapshot => {
+          const data = snapshot.val();
+          if (!data) {
+            alert("No data found for this device.");
+            return;
+          }
+
+          // Update MAC whitelist fields
+          if (data.mac_whitelist) {
+            for (let i = 0; i < 9; i++) {
+              const entry = data.mac_whitelist[i];
+              if (entry) {
+                document.querySelector(`[name=mac_${i}]`).value = entry.address || "";
+              } else {
+                document.querySelector(`[name=mac_${i}]`).value = "";
+              }
+            }
+          }
+
+          // Update max scan distance
+          if (data.max_scan_distance) {
+            document.getElementById("maxScanDistance").value = data.max_scan_distance;
+          }
+
+          // Show last updated timestamp
+          document.getElementById("lastUpdated").textContent = data.wl_last_updated || "-";
+        })
+        .catch(error => {
+          console.error("Read failed:", error);
+          alert("Failed to read data.");
+        });
+    });
+
+    // 🚀 Handle Update (form submission)
+    document.getElementById("whitelistForm").addEventListener("submit", function (event) {
       event.preventDefault();
 
       const whitelist = [];
-
       for (let i = 0; i < 9; i++) {
         const mac = document.querySelector(`[name=mac_${i}]`).value.trim();
         const pos = fixedPositions[i];
@@ -97,6 +141,7 @@
       firebase.database().ref(`devices/${deviceId}`).update(updateData)
         .then(() => {
           alert("Whitelist updated successfully!");
+          document.getElementById("lastUpdated").textContent = timestamp;
         })
         .catch(error => {
           console.error("Error updating whitelist:", error);
