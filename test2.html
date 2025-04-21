@@ -109,7 +109,7 @@
   }
 
   function animate() {
-    pulse += pulseDir * 0.5;
+    pulse += pulseDir * 0.25;
     if (pulse > 3 || pulse < 0) pulseDir *= -1;
     drawGrid(animatedTop);
     requestAnimationFrame(animate);
