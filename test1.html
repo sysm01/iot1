@@ -17,6 +17,10 @@
   <label for="maxScanDistance">Max Scan Distance (meters):</label>
   <input type="number" id="maxScanDistance" value="5" min="1" required><br><br>
 
+  <!-- Scan Interval -->
+  <label for="scanInterval">Scan Interval (seconds):</label>
+  <input type="number" id="scanInterval" value="30" min="1" required><br><br>
+
   <!-- Last updated display -->
   <label>Last Updated:</label>
   <span id="lastUpdated">-</span><br><br>
@@ -103,6 +107,11 @@
             document.getElementById("maxScanDistance").value = data.max_scan_distance;
           }
 
+          // Update scan interval
+          if (data.scan_interval) {
+            document.getElementById("scanInterval").value = data.scan_interval;
+          }
+
           // Show last updated timestamp
           document.getElementById("lastUpdated").textContent = data.wl_last_updated || "-";
         })
@@ -126,16 +135,18 @@
       const timestamp = new Date().toISOString();
       const deviceId = document.getElementById("deviceId").value;
       const maxScanDistance = parseInt(document.getElementById("maxScanDistance").value, 10);
+      const scanInterval = parseInt(document.getElementById("scanInterval").value, 10);
 
-      if (isNaN(maxScanDistance) || maxScanDistance < 1) {
-        alert("Max Scan Distance must be a valid integer greater than 0.");
+      if (isNaN(maxScanDistance) || maxScanDistance < 1 || isNaN(scanInterval) || scanInterval < 1) {
+        alert("Both Max Scan Distance and Scan Interval must be valid integers greater than 0.");
         return;
       }
 
       const updateData = {
         mac_whitelist: whitelist,
         wl_last_updated: timestamp,
-        max_scan_distance: maxScanDistance
+        max_scan_distance: maxScanDistance,
+        scan_interval: scanInterval
       };
 
       firebase.database().ref(`devices/${deviceId}`).update(updateData)
