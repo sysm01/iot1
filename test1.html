@@ -1,40 +1,134 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8" name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
   <title>MAC Whitelist Updater</title>
   <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f4f6f8;
+      padding: 20px;
+      margin: 0;
+    }
+
+    h2 {
+      color: #333;
+      text-align: center;
+    }
+
+    .container {
+      max-width: 700px;
+      margin: auto;
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    label {
+      font-weight: 600;
+      display: block;
+      margin-bottom: 5px;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 15px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 16px;
+      box-sizing: border-box;
+    }
+
+    input[readonly] {
+      background-color: #f0f0f0;
+      cursor: not-allowed;
+    }
+
+    .mac-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .mac-row input {
+      flex: 2;
+    }
+
+    .mac-row select {
+      flex: 1;
+    }
+
+    .buttons {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    button {
+      flex: 1;
+      padding: 12px;
+      background-color: #007bff;
+      color: white;
+      font-size: 16px;
+      font-weight: 600;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+
+    button:hover {
+      background-color: #0056b3;
+    }
+
+    #lastUpdated {
+      font-weight: bold;
+      color: #555;
+    }
+
+    @media (max-width: 600px) {
+      .mac-row {
+        flex-direction: column;
+      }
+
+      .buttons {
+        flex-direction: column;
+      }
+    }
+  </style>
 </head>
 <body>
-  <h2>Update MAC Whitelist</h2>
 
-  <!-- Device ID (readonly) -->
-  <label for="deviceId">Device ID:</label>
-  <input type="text" id="deviceId" value="device123" readonly><br><br>
+  <div class="container">
+    <h2>Update MAC Whitelist</h2>
 
-  <!-- Max Scan Distance -->
-  <label for="maxScanDistance">Max Scan Distance (meters):</label>
-  <input type="number" id="maxScanDistance" value="5" min="1" required><br><br>
+    <label for="deviceId">Device ID:</label>
+    <input type="text" id="deviceId" value="device123" readonly>
 
-  <!-- Scan Interval -->
-  <label for="scanInterval">Scan Interval (seconds):</label>
-  <input type="number" id="scanInterval" value="30" min="1" required><br><br>
+    <label for="maxScanDistance">Max Scan Distance (meters):</label>
+    <input type="number" id="maxScanDistance" value="5" min="1" required>
 
-  <!-- Last updated display -->
-  <label>Last Updated:</label>
-  <span id="lastUpdated">-</span><br><br>
+    <label for="scanInterval">Scan Interval (seconds):</label>
+    <input type="number" id="scanInterval" value="30" min="1" required>
 
-  <div id="inputs"></div>
-  <br>
+    <label>Last Updated:</label>
+    <div id="lastUpdated">-</div>
 
-  <button type="button" id="readBtn">Read</button>
-  <button type="submit" form="whitelistForm">Update</button>
+    <div id="inputs"></div>
 
-  <form id="whitelistForm"></form>
+    <div class="buttons">
+      <button type="button" id="readBtn">Read</button>
+      <button type="submit" form="whitelistForm">Update</button>
+    </div>
+
+    <form id="whitelistForm"></form>
+  </div>
 
   <script>
-    // 🔧 Firebase configuration
     const firebaseConfig = {
       apiKey: "YOUR_API_KEY",
       authDomain: "trackermk1.firebaseapp.com",
@@ -45,27 +139,24 @@
       appId: "YOUR_APP_ID"
     };
 
-    // 🔌 Initialize Firebase
     firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
 
     const fixedPositions = ["A1", "A2", "A3", "B1", "B2", "B3", "C1", "C2", "C3"];
     const inputsContainer = document.getElementById("inputs");
 
-    // 🎛️ Generate 9 sets of inputs with fixed, uneditable dropdowns
     for (let i = 0; i < 9; i++) {
       const wrapper = document.createElement("div");
+      wrapper.className = "mac-row";
 
-      // MAC Address input
       const macInput = document.createElement("input");
       macInput.type = "text";
       macInput.placeholder = "MAC Address";
-      macInput.name = mac_${i};
+      macInput.name = `mac_${i}`;
       macInput.required = true;
 
-      // Position dropdown (prepopulated & locked)
       const posSelect = document.createElement("select");
-      posSelect.name = pos_${i};
+      posSelect.name = `pos_${i}`;
       posSelect.disabled = true;
 
       const option = document.createElement("option");
@@ -78,11 +169,10 @@
       inputsContainer.appendChild(wrapper);
     }
 
-    // 📥 Handle Read button click
     document.getElementById("readBtn").addEventListener("click", function () {
       const deviceId = document.getElementById("deviceId").value;
 
-      firebase.database().ref(devices/${deviceId}).once("value")
+      database.ref(`devices/${deviceId}`).once("value")
         .then(snapshot => {
           const data = snapshot.val();
           if (!data) {
@@ -90,29 +180,21 @@
             return;
           }
 
-          // Update MAC whitelist fields
           if (data.mac_whitelist) {
             for (let i = 0; i < 9; i++) {
               const entry = data.mac_whitelist[i];
-              if (entry) {
-                document.querySelector([name=mac_${i}]).value = entry.address || "";
-              } else {
-                document.querySelector([name=mac_${i}]).value = "";
-              }
+              document.querySelector(`[name=mac_${i}]`).value = entry?.address || "";
             }
           }
 
-          // Update max scan distance
           if (data.max_scan_distance) {
             document.getElementById("maxScanDistance").value = data.max_scan_distance;
           }
 
-          // Update scan interval
           if (data.scan_interval) {
             document.getElementById("scanInterval").value = data.scan_interval;
           }
 
-          // Show last updated timestamp
           document.getElementById("lastUpdated").textContent = data.wl_last_updated || "-";
         })
         .catch(error => {
@@ -121,13 +203,12 @@
         });
     });
 
-    // 🚀 Handle Update (form submission)
     document.getElementById("whitelistForm").addEventListener("submit", function (event) {
       event.preventDefault();
 
       const whitelist = [];
       for (let i = 0; i < 9; i++) {
-        const mac = document.querySelector([name=mac_${i}]).value.trim();
+        const mac = document.querySelector(`[name=mac_${i}]`).value.trim();
         const pos = fixedPositions[i];
         whitelist.push({ address: mac, pos: pos });
       }
@@ -149,7 +230,7 @@
         scan_interval: scanInterval
       };
 
-      firebase.database().ref(devices/${deviceId}).update(updateData)
+      database.ref(`devices/${deviceId}`).update(updateData)
         .then(() => {
           alert("Whitelist updated successfully!");
           document.getElementById("lastUpdated").textContent = timestamp;
