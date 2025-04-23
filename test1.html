@@ -6,7 +6,16 @@
   <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
   <style>
-   
+    .mac-row {
+      margin-bottom: 10px;
+    }
+    .container > div {
+      margin-bottom: 10px;
+    }
+    #statusMessage {
+      margin-top: 10px;
+      font-weight: bold;
+    }
   </style>
 </head>
 <body>
@@ -15,29 +24,31 @@
     <h2>Update MAC Whitelist</h2>
 
     <div class="container">
-    <div>
+      <div>
         <label for="deviceId">Device ID:</label><br>
         <input type="text" id="deviceId" value="device123" readonly>
-    </div>
+      </div>
 
-    <div>
+      <div>
         <label for="maxScanDistance">Max Distance(m):</label><br>
         <input type="number" id="maxScanDistance" value="" min="1" required>
-    </div>
+      </div>
 
-    <div>
+      <div>
         <label for="scanInterval">Scan Interval(s):</label><br>
         <input type="number" id="scanInterval" value="" min="1" required>
-    </div>
+      </div>
 
-    <div>
+      <div>
         <label>Last Updated:</label><br>
         <div id="lastUpdated">-</div>
+      </div>
     </div>
-</div>
-
 
     <div id="inputs"></div>
+
+    <!-- Success/Error Message Display -->
+    <div id="statusMessage"></div>
 
     <div class="buttons">
       <button type="button" id="readBtn">Read</button>
@@ -96,7 +107,8 @@
         .then(snapshot => {
           const data = snapshot.val();
           if (!data) {
-            alert("No data found for this device.");
+            document.getElementById("statusMessage").textContent = "No data found for this device.";
+            document.getElementById("statusMessage").style.color = "red";
             return;
           }
 
@@ -119,7 +131,9 @@
         })
         .catch(error => {
           console.error("Read failed:", error);
-          alert("Failed to read data.");
+          const statusDiv = document.getElementById("statusMessage");
+          statusDiv.textContent = "Failed to read data.";
+          statusDiv.style.color = "red";
         });
     });
 
@@ -138,8 +152,11 @@
       const maxScanDistance = parseInt(document.getElementById("maxScanDistance").value, 10);
       const scanInterval = parseInt(document.getElementById("scanInterval").value, 10);
 
+      const statusDiv = document.getElementById("statusMessage");
+
       if (isNaN(maxScanDistance) || maxScanDistance < 1 || isNaN(scanInterval) || scanInterval < 1) {
-        alert("Both Max Scan Distance and Scan Interval must be valid integers greater than 0.");
+        statusDiv.textContent = "Both Max Scan Distance and Scan Interval must be valid integers greater than 0.";
+        statusDiv.style.color = "red";
         return;
       }
 
@@ -152,12 +169,14 @@
 
       database.ref(`devices/${deviceId}`).update(updateData)
         .then(() => {
-          alert("Whitelist updated successfully!");
+          statusDiv.textContent = "Whitelist updated successfully!";
+          statusDiv.style.color = "green";
           document.getElementById("lastUpdated").textContent = timestamp;
         })
         .catch(error => {
           console.error("Error updating whitelist:", error);
-          alert("Failed to update.");
+          statusDiv.textContent = "Failed to update whitelist.";
+          statusDiv.style.color = "red";
         });
     });
   </script>
