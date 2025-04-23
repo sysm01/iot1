@@ -24,13 +24,13 @@
 
 <h2>BLE Device Scan Table</h2>
 <div class="info-labels">
-  <strong>Device ID:</strong> <span id="deviceIdDisplay">Loading...</span> |
   <strong>Last Scanned:</strong> <span id="lastScannedDisplay">Loading...</span>
 </div>
 
 <table id="resultsTable">
   <thead>
     <tr>
+      <th>Device ID</th>
       <th>MAC Address</th>
       <th>Position</th>
       <th>Distance (m)</th>
@@ -129,7 +129,6 @@
     const scanList = scanSnap.val() || [];
     const lastScanned = lastScannedSnap.exists() ? lastScannedSnap.val() : "N/A";
 
-    document.getElementById("deviceIdDisplay").textContent = deviceId;
     document.getElementById("lastScannedDisplay").textContent = lastScanned;
 
     const posMap = {};
@@ -150,6 +149,7 @@
       const row = document.createElement("tr");
 
       row.innerHTML = `
+        <td>${deviceId}</td>
         <td>${entry.address}</td>
         <td>${pos}</td>
         <td>${entry.distance.toFixed(2)}</td>
