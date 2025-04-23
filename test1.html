@@ -34,13 +34,16 @@
     }
 
     input, select {
-      width: 100%;
-      padding: 10px;
-      margin-bottom: 15px;
+      padding: 8px 10px;
       border: 1px solid #ccc;
       border-radius: 6px;
-      font-size: 16px;
+      font-size: 15px;
       box-sizing: border-box;
+    }
+
+    input[type="text"], input[type="number"] {
+      width: 100%;
+      margin-bottom: 15px;
     }
 
     input[readonly] {
@@ -50,22 +53,24 @@
 
     .mac-row {
       display: flex;
+      justify-content: space-between;
       gap: 10px;
       margin-bottom: 10px;
     }
 
     .mac-row input {
-      flex: 2;
+      width: 60%;
     }
 
     .mac-row select {
-      flex: 1;
+      width: 35%;
     }
 
     .buttons {
       display: flex;
       justify-content: space-between;
       gap: 10px;
+      margin-top: 20px;
     }
 
     button {
@@ -93,6 +98,10 @@
     @media (max-width: 600px) {
       .mac-row {
         flex-direction: column;
+      }
+
+      .mac-row input, .mac-row select {
+        width: 100%;
       }
 
       .buttons {
