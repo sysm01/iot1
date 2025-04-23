@@ -47,11 +47,11 @@
 
     <div id="inputs"></div>
 
-    <!-- Success/Error Message Display -->
+    <!-- Status Message -->
     <div id="statusMessage"></div>
 
     <div class="buttons">
-      <button type="button" id="readBtn">Read</button>
+      <button type="button" id="readBtn">Refresh</button>
       <button type="submit" form="whitelistForm">Update</button>
     </div>
 
@@ -106,9 +106,12 @@
       database.ref(`devices/${deviceId}`).once("value")
         .then(snapshot => {
           const data = snapshot.val();
+          const statusDiv = document.getElementById("statusMessage");
+          statusDiv.textContent = ""; // clear any existing messages
+
           if (!data) {
-            document.getElementById("statusMessage").textContent = "No data found for this device.";
-            document.getElementById("statusMessage").style.color = "red";
+            statusDiv.textContent = "No data found for this device.";
+            statusDiv.style.color = "red";
             return;
           }
 
@@ -130,9 +133,9 @@
           document.getElementById("lastUpdated").textContent = data.wl_last_updated || "-";
         })
         .catch(error => {
-          console.error("Read failed:", error);
+          console.error("Refresh failed:", error);
           const statusDiv = document.getElementById("statusMessage");
-          statusDiv.textContent = "Failed to read data.";
+          statusDiv.textContent = "Failed to refresh data.";
           statusDiv.style.color = "red";
         });
     });
@@ -179,6 +182,11 @@
           statusDiv.style.color = "red";
         });
     });
+
+    // Auto-click "Read" button on page load
+    window.onload = function () {
+      document.getElementById("readBtn").click();
+    };
   </script>
 </body>
 </html>
