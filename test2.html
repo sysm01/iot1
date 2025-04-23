@@ -11,6 +11,10 @@
     table { border-collapse: collapse; width: 100%; margin-top: 10px; }
     th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
     th { background-color: #f2f2f2; }
+    .info-labels {
+      margin: 5px 0 10px 0;
+      font-size: 16px;
+    }
   </style>
 </head>
 <body>
@@ -19,14 +23,17 @@
 <canvas id="beaconGrid" width="400" height="400"></canvas>
 
 <h2>BLE Device Scan Table</h2>
+<div class="info-labels">
+  <strong>Device ID:</strong> <span id="deviceIdDisplay">Loading...</span> |
+  <strong>Last Scanned:</strong> <span id="lastScannedDisplay">Loading...</span>
+</div>
+
 <table id="resultsTable">
   <thead>
     <tr>
-      <th>Device ID</th>
       <th>MAC Address</th>
       <th>Position</th>
       <th>Distance (m)</th>
-      <th>Last Scanned</th>
     </tr>
   </thead>
   <tbody></tbody>
@@ -62,7 +69,6 @@
     const ctx = canvas.getContext("2d");
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Draw static grid lines
     ctx.strokeStyle = "#000";
     ctx.lineWidth = 2;
     for (let i = 0; i < 3; i++) {
@@ -77,13 +83,11 @@
       ctx.stroke();
     }
 
-    // Draw beacons
     for (const [pos, [x, y]] of Object.entries(positionMap)) {
       const rank = topPositions.indexOf(pos);
       const isTop = rank !== -1;
       const baseColor = isTop ? "red" : "black";
 
-      // Animated red rings for top 3
       if (isTop) {
         const ringCount = 3 - rank;
         for (let i = 1; i <= ringCount; i++) {
@@ -95,14 +99,12 @@
         }
       }
 
-      // Main static circle
       ctx.beginPath();
       ctx.lineWidth = 2;
       ctx.strokeStyle = baseColor;
       ctx.arc(x, y, 15, 0, 2 * Math.PI);
       ctx.stroke();
 
-      // Label
       ctx.fillStyle = "black";
       ctx.font = "14px Arial";
       ctx.fillText(pos, x - 10, y - 20);
@@ -127,6 +129,9 @@
     const scanList = scanSnap.val() || [];
     const lastScanned = lastScannedSnap.exists() ? lastScannedSnap.val() : "N/A";
 
+    document.getElementById("deviceIdDisplay").textContent = deviceId;
+    document.getElementById("lastScannedDisplay").textContent = lastScanned;
+
     const posMap = {};
     whitelist.forEach(entry => {
       posMap[entry.address.toLowerCase()] = entry.pos || "N/A";
@@ -145,11 +150,9 @@
       const row = document.createElement("tr");
 
       row.innerHTML = `
-        <td>${deviceId}</td>
         <td>${entry.address}</td>
         <td>${pos}</td>
         <td>${entry.distance.toFixed(2)}</td>
-        <td>${lastScanned}</td>
       `;
 
       tableBody.appendChild(row);
@@ -157,7 +160,7 @@
   }
 
   loadData();
-  setInterval(loadData, 3000); // Update every 3 seconds
+  setInterval(loadData, 3000);
 </script>
 
 </body>
