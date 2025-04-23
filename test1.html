@@ -14,17 +14,28 @@
   <div class="container">
     <h2>Update MAC Whitelist</h2>
 
-    <label for="deviceId">Device ID:</label>
-    <input type="text" id="deviceId" value="device123" readonly>
+    <div class="container">
+    <div>
+        <label for="deviceId">Device ID:</label><br>
+        <input type="text" id="deviceId" value="device123" readonly>
+    </div>
 
-    <label for="maxScanDistance">Max Distance(m):</label>
-    <input type="number" id="maxScanDistance" value="" min="1" required>
+    <div>
+        <label for="maxScanDistance">Max Distance(m):</label><br>
+        <input type="number" id="maxScanDistance" value="" min="1" required>
+    </div>
 
-    <label for="scanInterval">Scan Interval(s):</label>
-    <input type="number" id="scanInterval" value="" min="1" required>
+    <div>
+        <label for="scanInterval">Scan Interval(s):</label><br>
+        <input type="number" id="scanInterval" value="" min="1" required>
+    </div>
 
-    <label>Last Updated:</label>
-    <div id="lastUpdated">-</div>
+    <div>
+        <label>Last Updated:</label><br>
+        <div id="lastUpdated">-</div>
+    </div>
+</div>
+
 
     <div id="inputs"></div>
 
