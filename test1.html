@@ -59,11 +59,11 @@
     }
 
     .mac-row input {
-      width: 60%;
+      width: 18ch;
     }
 
     .mac-row select {
-      width: 35%;
+      width: 8ch;
     }
 
     .buttons {
@@ -163,6 +163,7 @@
       macInput.placeholder = "MAC Address";
       macInput.name = `mac_${i}`;
       macInput.required = true;
+      macInput.maxLength = 18;
 
       const posSelect = document.createElement("select");
       posSelect.name = `pos_${i}`;
