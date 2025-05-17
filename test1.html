@@ -6,187 +6,197 @@
   <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
   <style>
-    .mac-row {
-      margin-bottom: 10px;
-    }
-    .container > div {
-      margin-bottom: 10px;
-    }
-    #statusMessage {
-      margin-top: 10px;
-      font-weight: bold;
-    }
+    .mac-row { margin-bottom: 10px; }
+    .container > div { margin-bottom: 10px; }
+    #statusMessage { margin-top: 10px; font-weight: bold; }
   </style>
 </head>
 <body>
 
+<div class="container">
+  <h2>Update MAC Whitelist</h2>
+
   <div class="container">
-    <h2>Update MAC Whitelist</h2>
-
-    <div class="container">
-      <div>
-        <label for="deviceId">Device ID:</label><br>
-        <input type="text" id="deviceId" value="device123" readonly>
-      </div>
-
-      <div>
-        <label for="maxScanDistance">Max Distance(m):</label><br>
-        <input type="number" id="maxScanDistance" value="" min="1" required>
-      </div>
-
-      <div>
-        <label for="scanInterval">Scan Interval(s):</label><br>
-        <input type="number" id="scanInterval" value="" min="1" required>
-      </div>
-
-      <div>
-        <label>Last Updated:</label><br>
-        <div id="lastUpdated">-</div>
-      </div>
+    <div>
+      <label for="deviceSelector">Select Device:</label><br>
+      <select id="deviceSelector">
+        <option value="">-- Select a Device --</option>
+      </select>
     </div>
 
-    <div id="inputs"></div>
-
-    <!-- Status Message -->
-    <div id="statusMessage"></div>
-
-    <div class="buttons">
-      <button type="button" id="readBtn">Refresh</button>
-      <button type="submit" form="whitelistForm">Update</button>
+    <div>
+      <label for="maxScanDistance">Max Distance(m):</label><br>
+      <input type="number" id="maxScanDistance" value="" min="1" required>
     </div>
 
-    <form id="whitelistForm"></form>
+    <div>
+      <label for="scanInterval">Scan Interval(s):</label><br>
+      <input type="number" id="scanInterval" value="" min="1" required>
+    </div>
+
+    <div>
+      <label>Last Updated:</label><br>
+      <div id="lastUpdated">-</div>
+    </div>
   </div>
 
-  <script>
-    const firebaseConfig = {
-      apiKey: "YOUR_API_KEY",
-      authDomain: "trackermk1.firebaseapp.com",
-      databaseURL: "https://trackermk1-default-rtdb.firebaseio.com",
-      projectId: "trackermk1",
-      storageBucket: "trackermk1.appspot.com",
-      messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-      appId: "YOUR_APP_ID"
-    };
+  <div id="inputs"></div>
 
-    firebase.initializeApp(firebaseConfig);
-    const database = firebase.database();
+  <div id="statusMessage"></div>
 
-    const fixedPositions = ["A1", "A2", "A3", "B1", "B2", "B3", "C1", "C2", "C3"];
-    const inputsContainer = document.getElementById("inputs");
+  <div class="buttons">
+    <button type="button" id="readBtn">Refresh</button>
+    <button type="submit" form="whitelistForm">Update</button>
+  </div>
 
+  <form id="whitelistForm"></form>
+</div>
+
+<script>
+  const firebaseConfig = {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "trackermk1.firebaseapp.com",
+    databaseURL: "https://trackermk1-default-rtdb.firebaseio.com",
+    projectId: "trackermk1",
+    storageBucket: "trackermk1.appspot.com",
+    messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+    appId: "YOUR_APP_ID"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const database = firebase.database();
+
+  const fixedPositions = ["A1", "A2", "A3", "B1", "B2", "B3", "C1", "C2", "C3"];
+  const inputsContainer = document.getElementById("inputs");
+
+  for (let i = 0; i < 9; i++) {
+    const wrapper = document.createElement("div");
+    wrapper.className = "mac-row";
+
+    const macInput = document.createElement("input");
+    macInput.type = "text";
+    macInput.placeholder = "MAC Address";
+    macInput.name = `mac_${i}`;
+    macInput.required = true;
+    macInput.maxLength = 18;
+
+    const posSelect = document.createElement("select");
+    posSelect.name = `pos_${i}`;
+    posSelect.disabled = true;
+
+    const option = document.createElement("option");
+    option.value = fixedPositions[i];
+    option.text = fixedPositions[i];
+    posSelect.appendChild(option);
+
+    wrapper.appendChild(macInput);
+    wrapper.appendChild(posSelect);
+    inputsContainer.appendChild(wrapper);
+  }
+
+  function populateDeviceList() {
+    const selector = document.getElementById("deviceSelector");
+    database.ref("devices").once("value")
+      .then(snapshot => {
+        const devices = snapshot.val();
+        for (const deviceId in devices) {
+          const option = document.createElement("option");
+          option.value = deviceId;
+          option.textContent = deviceId;
+          selector.appendChild(option);
+        }
+      });
+  }
+
+  function loadDeviceData(deviceId) {
+    const statusDiv = document.getElementById("statusMessage");
+    statusDiv.textContent = "";
+
+    database.ref(`devices/${deviceId}`).once("value")
+      .then(snapshot => {
+        const data = snapshot.val();
+
+        if (!data) {
+          statusDiv.textContent = "No data found for this device.";
+          statusDiv.style.color = "red";
+          return;
+        }
+
+        if (data.mac_whitelist) {
+          for (let i = 0; i < 9; i++) {
+            const entry = data.mac_whitelist[i];
+            document.querySelector(`[name=mac_${i}]`).value = entry?.address || "";
+          }
+        }
+
+        document.getElementById("maxScanDistance").value = data.max_scan_distance || "";
+        document.getElementById("scanInterval").value = data.scan_interval || "";
+        document.getElementById("lastUpdated").textContent = data.wl_last_updated || "-";
+      })
+      .catch(error => {
+        console.error("Refresh failed:", error);
+        statusDiv.textContent = "Failed to refresh data.";
+        statusDiv.style.color = "red";
+      });
+  }
+
+  document.getElementById("readBtn").addEventListener("click", function () {
+    const selectedDevice = document.getElementById("deviceSelector").value;
+    if (selectedDevice) {
+      loadDeviceData(selectedDevice);
+    }
+  });
+
+  document.getElementById("whitelistForm").addEventListener("submit", function (event) {
+    event.preventDefault();
+
+    const deviceId = document.getElementById("deviceSelector").value;
+    if (!deviceId) return;
+
+    const whitelist = [];
     for (let i = 0; i < 9; i++) {
-      const wrapper = document.createElement("div");
-      wrapper.className = "mac-row";
-
-      const macInput = document.createElement("input");
-      macInput.type = "text";
-      macInput.placeholder = "MAC Address";
-      macInput.name = `mac_${i}`;
-      macInput.required = true;
-      macInput.maxLength = 18;
-
-      const posSelect = document.createElement("select");
-      posSelect.name = `pos_${i}`;
-      posSelect.disabled = true;
-
-      const option = document.createElement("option");
-      option.value = fixedPositions[i];
-      option.text = fixedPositions[i];
-      posSelect.appendChild(option);
-
-      wrapper.appendChild(macInput);
-      wrapper.appendChild(posSelect);
-      inputsContainer.appendChild(wrapper);
+      const mac = document.querySelector(`[name=mac_${i}]`).value.trim();
+      const pos = fixedPositions[i];
+      whitelist.push({ address: mac, pos: pos });
     }
 
-    document.getElementById("readBtn").addEventListener("click", function () {
-      const deviceId = document.getElementById("deviceId").value;
+    const timestamp = new Date().toISOString();
+    const maxScanDistance = parseInt(document.getElementById("maxScanDistance").value, 10);
+    const scanInterval = parseInt(document.getElementById("scanInterval").value, 10);
+    const statusDiv = document.getElementById("statusMessage");
 
-      database.ref(`devices/${deviceId}`).once("value")
-        .then(snapshot => {
-          const data = snapshot.val();
-          const statusDiv = document.getElementById("statusMessage");
-          statusDiv.textContent = ""; // clear any existing messages
+    if (isNaN(maxScanDistance) || maxScanDistance < 1 || isNaN(scanInterval) || scanInterval < 1) {
+      statusDiv.textContent = "Both Max Scan Distance and Scan Interval must be valid integers greater than 0.";
+      statusDiv.style.color = "red";
+      return;
+    }
 
-          if (!data) {
-            statusDiv.textContent = "No data found for this device.";
-            statusDiv.style.color = "red";
-            return;
-          }
-
-          if (data.mac_whitelist) {
-            for (let i = 0; i < 9; i++) {
-              const entry = data.mac_whitelist[i];
-              document.querySelector(`[name=mac_${i}]`).value = entry?.address || "";
-            }
-          }
-
-          if (data.max_scan_distance) {
-            document.getElementById("maxScanDistance").value = data.max_scan_distance;
-          }
-
-          if (data.scan_interval) {
-            document.getElementById("scanInterval").value = data.scan_interval;
-          }
-
-          document.getElementById("lastUpdated").textContent = data.wl_last_updated || "-";
-        })
-        .catch(error => {
-          console.error("Refresh failed:", error);
-          const statusDiv = document.getElementById("statusMessage");
-          statusDiv.textContent = "Failed to refresh data.";
-          statusDiv.style.color = "red";
-        });
-    });
-
-    document.getElementById("whitelistForm").addEventListener("submit", function (event) {
-      event.preventDefault();
-
-      const whitelist = [];
-      for (let i = 0; i < 9; i++) {
-        const mac = document.querySelector(`[name=mac_${i}]`).value.trim();
-        const pos = fixedPositions[i];
-        whitelist.push({ address: mac, pos: pos });
-      }
-
-      const timestamp = new Date().toISOString();
-      const deviceId = document.getElementById("deviceId").value;
-      const maxScanDistance = parseInt(document.getElementById("maxScanDistance").value, 10);
-      const scanInterval = parseInt(document.getElementById("scanInterval").value, 10);
-
-      const statusDiv = document.getElementById("statusMessage");
-
-      if (isNaN(maxScanDistance) || maxScanDistance < 1 || isNaN(scanInterval) || scanInterval < 1) {
-        statusDiv.textContent = "Both Max Scan Distance and Scan Interval must be valid integers greater than 0.";
-        statusDiv.style.color = "red";
-        return;
-      }
-
-      const updateData = {
-        mac_whitelist: whitelist,
-        wl_last_updated: timestamp,
-        max_scan_distance: maxScanDistance,
-        scan_interval: scanInterval
-      };
-
-      database.ref(`devices/${deviceId}`).update(updateData)
-        .then(() => {
-          statusDiv.textContent = "Whitelist updated successfully!";
-          statusDiv.style.color = "green";
-          document.getElementById("lastUpdated").textContent = timestamp;
-        })
-        .catch(error => {
-          console.error("Error updating whitelist:", error);
-          statusDiv.textContent = "Failed to update whitelist.";
-          statusDiv.style.color = "red";
-        });
-    });
-
-    // Auto-click "Read" button on page load
-    window.onload = function () {
-      document.getElementById("readBtn").click();
+    const updateData = {
+      mac_whitelist: whitelist,
+      wl_last_updated: timestamp,
+      max_scan_distance: maxScanDistance,
+      scan_interval: scanInterval
     };
-  </script>
+
+    database.ref(`devices/${deviceId}`).update(updateData)
+      .then(() => {
+        statusDiv.textContent = "Whitelist updated successfully!";
+        statusDiv.style.color = "green";
+        document.getElementById("lastUpdated").textContent = timestamp;
+      })
+      .catch(error => {
+        console.error("Error updating whitelist:", error);
+        statusDiv.textContent = "Failed to update whitelist.";
+        statusDiv.style.color = "red";
+      });
+  });
+
+  document.getElementById("deviceSelector").addEventListener("change", function () {
+    const deviceId = this.value;
+    if (deviceId) loadDeviceData(deviceId);
+  });
+
+  window.onload = populateDeviceList;
+</script>
 </body>
 </html>
