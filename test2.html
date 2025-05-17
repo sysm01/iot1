@@ -11,10 +11,7 @@
     table { border-collapse: collapse; width: 100%; margin-top: 10px; }
     th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
     th { background-color: #f2f2f2; }
-    .info-labels {
-      margin: 5px 0 10px 0;
-      font-size: 16px;
-    }
+    .info-labels { margin: 5px 0 10px 0; font-size: 16px; }
   </style>
 </head>
 <body>
@@ -22,11 +19,16 @@
 <h2>Beacon Grid View</h2>
 <canvas id="beaconGrid" width="400" height="400"></canvas>
 
-<h2>BLE Device Scan Table</h2>
+<h2>Select BLE Device</h2>
+<select id="deviceSelector">
+  <option value="">-- Select a Device --</option>
+</select>
+
 <div class="info-labels">
   <strong>Last Scanned:</strong> <span id="lastScannedDisplay">Loading...</span>
 </div>
 
+<h2>BLE Device Scan Table</h2>
 <table id="resultsTable">
   <thead>
     <tr>
@@ -50,7 +52,6 @@
     appId: "YOUR_APP_ID"
   };
 
-  const deviceId = "device123";
   const positionMap = {
     A1: [50, 50],   A2: [200, 50],   A3: [350, 50],
     B1: [50, 200],  B2: [200, 200],  B3: [350, 200],
@@ -63,6 +64,7 @@
   let animatedTop = [];
   let pulse = 0;
   let pulseDir = 1;
+  let currentDeviceId = "";
 
   function drawGrid(topPositions = []) {
     const canvas = document.getElementById("beaconGrid");
@@ -120,7 +122,24 @@
 
   requestAnimationFrame(animate);
 
-  async function loadData() {
+  async function populateDeviceList() {
+    const devicesSnap = await db.ref("devices").get();
+    const deviceSelector = document.getElementById("deviceSelector");
+
+    if (devicesSnap.exists()) {
+      const devices = devicesSnap.val();
+      for (const deviceId in devices) {
+        const option = document.createElement("option");
+        option.value = deviceId;
+        option.textContent = deviceId;
+        deviceSelector.appendChild(option);
+      }
+    }
+  }
+
+  async function loadData(deviceId) {
+    if (!deviceId) return;
+
     const whitelistSnap = await db.ref(`devices/${deviceId}/mac_whitelist`).get();
     const scanSnap = await db.ref(`devices/${deviceId}/mac_scan`).get();
     const lastScannedSnap = await db.ref(`devices/${deviceId}/last_scanned`).get();
@@ -159,8 +178,22 @@
     });
   }
 
-  loadData();
-  setInterval(loadData, 3000);
+  // Initial load
+  populateDeviceList();
+
+  // When a device is selected, load its data
+  document.getElementById("deviceSelector").addEventListener("change", function () {
+    currentDeviceId = this.value;
+    if (currentDeviceId) {
+      loadData(currentDeviceId);
+      if (!window._pollingStarted) {
+        setInterval(() => {
+          if (currentDeviceId) loadData(currentDeviceId);
+        }, 3000);
+        window._pollingStarted = true;
+      }
+    }
+  });
 </script>
 
 </body>
