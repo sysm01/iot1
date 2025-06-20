@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Device Alerts</title>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <style>
+    table {
+      border-collapse: collapse;
+      width: 80%;
+      margin: 20px auto;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 10px;
+      text-align: left;
+    }
+    th {
+      background-color: #eee;
+    }
+  </style>
+</head>
+<body>
+
+<h2 style="text-align:center">Device Alerts (device_001)</h2>
+
+<table id="alertsTable">
+  <thead>
+    <tr>
+      <th>Alert ID</th>
+      <th>Alert Name</th>
+      <th>Timestamp</th>
+    </tr>
+  </thead>
+  <tbody>
+    <!-- Rows go here -->
+  </tbody>
+</table>
+
+<script>
+  // Firebase config
+  const firebaseConfig = {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_PROJECT.firebaseapp.com",
+    databaseURL: "https://YOUR_PROJECT.firebaseio.com",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_PROJECT.appspot.com",
+    messagingSenderId: "YOUR_SENDER_ID",
+    appId: "YOUR_APP_ID"
+  };
+
+  // Initialize Firebase
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+
+  // Fetch and display alerts
+  const tableBody = document.getElementById("alertsTable").getElementsByTagName("tbody")[0];
+
+  db.ref("device_001/alerts").once("value", snapshot => {
+    const alerts = [];
+
+    snapshot.forEach(child => {
+      alerts.push(child.val());
+    });
+
+    // Sort by timestamp (latest first)
+    alerts.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+    alerts.forEach(alert => {
+      const row = tableBody.insertRow();
+      row.insertCell(0).innerText = alert.alert_id;
+      row.insertCell(1).innerText = alert.alert_name;
+      row.insertCell(2).innerText = alert.timestamp;
+    });
+  });
+</script>
+
+</body>
+</html>
